@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>出国路线简易搜索</title>
+    <style>
+      :root {
+        --bg: #f4f6f5;
+        --card: #ffffff;
+        --ink: #1c2126;
+        --muted: #5b6672;
+        --line: #d9dfe3;
+        --accent: #0e6b4f;
+        --accent-ink: #ffffff;
+        --chip-bg: #eef1f3;
+        --chip-on: #0e6b4f;
+        --tag-bg: #e8f2ee;
+        --tag-ink: #0e6b4f;
+        --focus: #b7791f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14181a;
+          --card: #1e2427;
+          --ink: #eef1f2;
+          --muted: #a7b2ba;
+          --line: #39434a;
+          --accent: #2ea37e;
+          --accent-ink: #0c1512;
+          --chip-bg: #2a3237;
+          --chip-on: #2ea37e;
+          --tag-bg: #22352e;
+          --tag-ink: #7fd4b6;
+          --focus: #e0a83c;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+      .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 40px; }
+
+      .intro { font-size: 19px; line-height: 1.6; margin: 4px 0 18px; }
+      .intro strong { color: var(--accent); }
+
+      /* ---------- filters ---------- */
+      .filters {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 18px;
+      }
+      .fgroup { margin-bottom: 16px; }
+      .fgroup:last-child { margin-bottom: 0; }
+      .flabel { display: block; font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip {
+        appearance: none;
+        border: 1.5px solid var(--line);
+        background: var(--chip-bg);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 10px 14px;
+        min-height: 44px;
+        font-size: 16px;
+        cursor: pointer;
+        text-align: left;
+      }
+      .chip[aria-pressed="true"] {
+        background: var(--chip-on);
+        border-color: var(--chip-on);
+        color: #fff;
+        font-weight: 700;
+      }
+      @media (prefers-color-scheme: dark) {
+        .chip[aria-pressed="true"] { color: #0c1512; }
+      }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+      select, input[type="number"], input[type="search"] {
+        width: 100%;
+        min-height: 48px;
+        font-size: 17px;
+        padding: 10px 12px;
+        border: 1.5px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+      }
+      select:focus, input:focus, .chip:focus-visible, .btn:focus-visible, a.linkbtn:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 1px;
+      }
+      .resetrow { margin-top: 4px; }
+      .btn {
+        appearance: none;
+        border: 1.5px solid var(--accent);
+        background: transparent;
+        color: var(--accent);
+        border-radius: 8px;
+        min-height: 44px;
+        padding: 10px 18px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      /* ---------- results ---------- */
+      .count { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+      .count .dim { color: var(--muted); font-weight: 400; font-size: 15px; }
+      .cards { display: grid; gap: 12px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .card h2 { font-size: 20px; line-height: 1.4; margin: 0 0 8px; overflow-wrap: anywhere; }
+      .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+      .tag {
+        background: var(--tag-bg);
+        color: var(--tag-ink);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .tag.country { background: var(--chip-bg); color: var(--ink); }
+      .rows { margin: 0 0 14px; }
+      .rows .r { display: flex; gap: 10px; padding: 3px 0; }
+      .rows .k { flex: 0 0 84px; color: var(--muted); font-size: 16px; }
+      .rows .v { flex: 1; min-width: 0; font-size: 16px; overflow-wrap: anywhere; }
+      a.linkbtn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 10px 22px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border-radius: 8px;
+        font-size: 17px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .empty {
+        background: var(--card);
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 28px 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 17px;
+      }
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 13.5px;
+        line-height: 1.6;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="intro">这里有 <strong>114 条</strong>真实出国路线：打工度假、互惠生、志愿者、海外实习、国际组织、科研奖学金、学手艺、直接就业……填上你的年龄、学历和预算，先粗筛一遍，再点开官网核对细节。</p>
+
+      <section class="filters" aria-label="筛选条件">
+        <div class="fgroup">
+          <span class="flabel" id="catLabel">想走哪类路线（可多选，不选 = 全部）</span>
+          <div class="chips" id="catChips" role="group" aria-labelledby="catLabel"></div>
+        </div>
+
+        <div class="grid2">
+          <div class="fgroup">
+            <label class="flabel" for="fCountry">国家 / 地区</label>
+            <select id="fCountry"><option value="">全部国家</option></select>
+          </div>
+          <div class="fgroup">
+            <label class="flabel" for="fAge">我的年龄（岁）</label>
+            <input type="number" id="fAge" inputmode="numeric" min="10" max="99" placeholder="如 24，不填 = 不限" />
+          </div>
+          <div class="fgroup">
+            <label class="flabel" for="fEdu">我的最高学历</label>
+            <select id="fEdu">
+              <option value="">不限</option>
+              <option value="0">高中及以下</option>
+              <option value="1">大专</option>
+              <option value="2">本科</option>
+              <option value="3">硕士</option>
+              <option value="4">博士</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label class="flabel" for="fBudget">前期预算上限</label>
+            <select id="fBudget">
+              <option value="">不限</option>
+              <option value="10000">1 万元以内</option>
+              <option value="30000">3 万元以内</option>
+              <option value="60000">6 万元以内</option>
+              <option value="100000">10 万元以内</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <label class="flabel" for="fKw">关键词搜索</label>
+          <input type="search" id="fKw" placeholder="如：互惠生、日本、护理、奖学金…" />
+        </div>
+
+        <div class="resetrow">
+          <button type="button" class="btn" id="btnReset">清除全部筛选</button>
+        </div>
+      </section>
+
+      <p class="count" id="countLine" aria-live="polite"></p>
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="emptyBox" hidden>没有符合全部条件的路线。<br />试试放宽年龄、学历或预算，或删掉关键词再看看。</div>
+
+      <footer>
+        本页信息整理自公开资料，仅供初步筛选参考；筛选为按公开文本的粗略匹配，可能有个别误差。申请资格、费用和名额请以各项目官网最新公布为准，请在「官方链接」里核对后再行动。
+      </footer>
+    </div>
+
+    <script>
+      var ROUTES = [{"cat": "① 一边打工，一边看看世界", "country": "澳大利亚", "name": "Work and Holiday visa（subclass 462）", "age": "18–30岁", "edu": "高等教育学历，或至少完成2年本科（中国申请人）", "cost": "约¥4.5–6.5万（核心是约 AUD 5,000 资金证明；另加签证费、体检/保险和单程机票）", "url": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/work-holiday-462", "lang": "需满足澳洲“Functional English”；常见证明为 IELTS 平均≥4.5，或官方认可的 CELPIP/PTE/TOEFL 等同标准"}, {"cat": "① 一边打工，一边看看世界", "country": "新西兰", "name": "China Working Holiday Visa", "age": "18–30岁", "edu": "高中及以上；需满足英语要求", "cost": "约¥3.8–5.5万（含 NZD 4,200 资金证明、签证费、英语考试及机票）", "url": "https://www.immigration.govt.nz/visas/china-working-holiday-visa/", "lang": "需英语成绩：IELTS 总分≥5.5，或新西兰移民局认可的等同考试成绩"}, {"cat": "① 一边打工，一边看看世界", "country": "美国", "name": "J-1 Summer Work Travel", "age": "无统一年龄上限；须为大学在读生", "edu": "全日制高等院校在读；英语能工作沟通", "cost": "约¥2.5–5.5万（赞助商/项目费差异大，另含 SEVIS、签证、保险、机票和落地周转）", "url": "https://j1visa.state.gov/programs/summer-work-travel/", "lang": "须具备足以顺利参加项目并进行日常沟通的英语能力；赞助方需核验"}, {"cat": "① 一边打工，一边看看世界", "country": "美国", "name": "J-1 Camp Counselor", "age": "18岁以上", "edu": "青年工作者、学生、教师或具备专项技能；英语能工作沟通", "cost": "约¥1.8–4万（赞助商费、SEVIS/签证、保险和机票；食宿安排依营地合同）", "url": "https://j1visa.state.gov/programs/camp-counselor/", "lang": "须具备熟练口语英语，能与营员和工作人员有效沟通"}, {"cat": "① 一边打工，一边看看世界", "country": "英国", "name": "Seasonal Worker visa", "age": "18岁以上", "edu": "无统一学历要求；须有获批赞助方担保", "cost": "约¥2.4–3.8万（含 £1,270 维护资金要求、签证和机票；雇主认证资助可免维护金证明）", "url": "https://www.gov.uk/seasonal-worker-visa", "lang": "签证无统一英语考试门槛；实际岗位由雇主/担保方决定，基础英语通常很重要"}, {"cat": "① 一边打工，一边看看世界", "country": "芬兰", "name": "Seasonal Work Permit", "age": "无统一年龄上限", "edu": "无统一学历要求；须有季节性工作合同", "cost": "约¥1.2–2.5万（许可/签证、机票、保险和首薪前周转；有宿舍岗位可更低）", "url": "https://migri.fi/en/seasonal-work", "lang": "许可本身无统一语言考试；岗位多要求能用英语或芬兰语完成安全与工作沟通，以雇主为准"}, {"cat": "① 一边打工，一边看看世界", "country": "瑞典", "name": "Seasonal Worker Permit", "age": "无统一年龄上限", "edu": "无统一学历要求；须有符合条件的季节性工作", "cost": "约¥1.5–2.8万（许可费、机票及首薪前周转；雇主住宿安排会显著影响）", "url": "https://www.migrationsverket.se/en/you-want-to-apply/work/temporary-work-in-sweden/seasonal-workers.html", "lang": "无统一语言考试；按雇主岗位要求，常见为英语或瑞典语基本工作沟通"}, {"cat": "① 一边打工，一边看看世界", "country": "挪威", "name": "Seasonal Worker Residence Permit", "age": "通常18岁以上", "edu": "无统一学历要求；须有季节性工作录用", "cost": "约¥2.2–3.8万（申请费、机票和首薪前周转；通常先有雇主合同）", "url": "https://www.udi.no/en/want-to-apply/work-immigration/seasonal-workers/", "lang": "无统一语言考试；按雇主岗位要求，英语或挪威语工作沟通能力通常有帮助"}, {"cat": "① 一边打工，一边看看世界", "country": "克罗地亚", "name": "Seasonal Worker", "age": "通常18岁以上", "edu": "无统一学历要求；须有雇主和工作许可安排", "cost": "约¥1.2–2.4万（签证/许可、机票、住宿押金与首薪前周转）", "url": "https://mup.gov.hr/aliens-281621/stay-and-work/seasonal-workers/281670", "lang": "无全国统一语言考试；以雇主岗位要求为准，旅游/服务岗位常要求英语，部分要求克罗地亚语"}, {"cat": "① 一边打工，一边看看世界", "country": "法国", "name": "Travailleur saisonnier（季节工）", "age": "无统一年龄上限", "edu": "无统一学历要求；须有季节性劳动合同", "cost": "约¥1.5–2.8万（长居签证/居留手续、机票和首薪前周转）", "url": "https://france-visas.gouv.fr/en/activite-salariee", "lang": "签证/居留无统一法语考试；语言要求由岗位决定，农业岗位可能较低，服务类通常需法语"}, {"cat": "① 一边打工，一边看看世界", "country": "西班牙", "name": "Seasonal Worker", "age": "通常18岁以上", "edu": "无统一学历要求；由雇主先办理工作许可", "cost": "约¥1.4–2.8万（签证、机票、住宿押金及首薪前周转；雇主办理工作许可）", "url": "https://home-affairs.ec.europa.eu/policies/migration-and-asylum/eu-immigration-portal/seasonal-worker-spain_en", "lang": "无统一语言考试；由雇主岗位决定，西班牙语基础对现场工作和安全沟通很重要"}, {"cat": "① 一边打工，一边看看世界", "country": "葡萄牙", "name": "Seasonal Worker", "age": "通常18岁以上", "edu": "无统一学历要求；须有合同或工作承诺", "cost": "约¥1.3–2.6万（签证/居留手续、机票和首薪前周转）", "url": "https://home-affairs.ec.europa.eu/policies/migration-and-asylum/eu-immigration-portal/seasonal-worker-portugal_en", "lang": "无统一语言考试；由雇主岗位决定，常见为葡萄牙语或英语基础工作沟通"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "法国", "name": "Jeune au pair", "age": "18–30岁", "edu": "通常高中及以上；需基础法语或入境后学习法语", "cost": "约¥0.8–1.8万（签证/居留税费、机票、保险与周转；家庭包食宿并付零用钱）", "url": "https://france-visas.gouv.fr/en/jeune-au-pair", "lang": "需证明基础法语，或以中等教育水平/职业资格满足法定替代条件；在法期间需可参加法语课程"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "德国", "name": "Au Pair", "age": "18–26岁（申请时）", "edu": "无统一大学学历要求；通常需德语A1左右", "cost": "约¥0.7–1.6万（签证、机票与个人周转；家庭包食宿并承担法定保险）", "url": "https://www.arbeitsagentur.de/unternehmen/arbeitskraefte/au-pair", "lang": "德语需具备基础水平，实务上通常按 A1 准备"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "荷兰", "name": "Au Pair", "age": "18–25岁", "edu": "无统一大学学历要求；须通过认可Au Pair机构申请", "cost": "约¥0.9–2.2万（认可机构/准备费用、机票和保险；家庭包食宿和零用钱）", "url": "https://ind.nl/en/residence-permits/au-pair-and-exchange/residence-permit-au-pair", "lang": "无统一入境语言等级；需能与寄宿家庭沟通，机构/家庭可另设英语或荷兰语要求"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "丹麦", "name": "Au Pair", "age": "18–29岁", "edu": "通常完成相当于9年级教育；需具备与家庭沟通的语言能力", "cost": "约¥0.8–1.8万（申请费、机票和保险；家庭承担食宿并付零用钱）", "url": "https://www.nyidanmark.dk/en-GB/You-want-to-apply/Au-pair", "lang": "需能以丹麦语、瑞典语、挪威语、英语或德语进行中等程度沟通"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "瑞典", "name": "Au Pair", "age": "18–30岁", "edu": "无统一大学学历要求；须以文化交流和语言学习为主要目的", "cost": "约¥0.8–1.7万（许可、机票和保险；家庭提供食宿及报酬）", "url": "https://www.migrationsverket.se/en/you-want-to-apply/work/temporary-work-in-sweden/au-pairs.html", "lang": "无统一考试分数；需以学习瑞典语为停留目的之一，并能与家庭基本沟通"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "芬兰", "name": "Au Pair", "age": "17–30岁", "edu": "无统一大学学历要求；通常需有照护/家务经验或文化交流背景", "cost": "约¥0.9–1.9万（许可费、机票、保险与周转；家庭提供食宿和零用钱）", "url": "https://migri.fi/en/au-pair/en", "lang": "需具备芬兰语或瑞典语基础，并表现出学习当地语言文化的兴趣"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "比利时", "name": "Au Pair", "age": "18–25岁", "edu": "通常高中毕业；需参加语言课程并满足当地规定", "cost": "约¥0.8–1.8万（签证/许可、机票和保险；家庭提供食宿和零用钱）", "url": "https://employment.belgium.be/en/themes/international/foreign-workers/au-pair-work-belgium", "lang": "无统一入境语言等级；须按所在地区参加官方语言课程（法语/荷兰语/德语）"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "奥地利", "name": "Au Pair", "age": "18–28岁（以AMS当期规则为准）", "edu": "无统一大学学历要求；通常需基础德语", "cost": "约¥0.7–1.6万（手续、机票和个人周转；家庭提供食宿和零用钱）", "url": "https://www.usp.gv.at/en/themen/mitarbeiter-und-gesundheit/einstellung-mitarbeiter-und-arten-der-beschaeftigung/weitere-informationen-auslaendische-beschaeftigte/au-pair.html", "lang": "德语至少 A1"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "卢森堡", "name": "Au Pair", "age": "18–30岁", "edu": "通常至少完成中学教育；需具备规定语言能力", "cost": "约¥1–2.2万（审批/签证、机票、保险与周转；家庭提供食宿和零用钱）", "url": "https://guichet.public.lu/en/citoyens/immigration/plus-3-mois/ressortissant-tiers/jeune-au-pair/au-pair-tiers.html", "lang": "需掌握寄宿家庭所用语言的基础，并具备英语、德语、法语或卢森堡语之一的沟通能力"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "美国", "name": "J-1 Au Pair", "age": "18–26岁", "edu": "高中毕业或同等学历；英语能进行日常沟通", "cost": "约¥1.5–4.5万（指定赞助商项目费差异大；另含签证/SEVIS和机票，住宿由家庭提供）", "url": "https://j1visa.state.gov/programs/au-pair/", "lang": "须熟练使用英语口语，能在家庭及儿童照护场景有效沟通"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "西班牙", "name": "Language and Culture Assistants Program", "age": "18–44岁（2026–27中国申请规则）", "edu": "大学毕业，或至少完成2年大学学习；中国申请人须满足英语要求", "cost": "约¥1.5–3万（签证、机票、住宿押金和首月生活；录取后按月领津贴）", "url": "https://www.educacionfpydeportes.gob.es/en/servicios-al-ciudadano/catalogo/general/99/998188/ficha/998188-2026-2027.html", "lang": "中国申请人参加英语助教类别需证明英语 C2；其他国别/语言类别按当期国家通知"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "日本", "name": "JET Programme — CIR（国际交流员）", "age": "原则上无硬性年龄上限；以当年中国地区招募为准", "edu": "通常需本科毕业；高水平日语及中文/英语沟通能力", "cost": "约¥0.3–1万（赴任交通通常由项目安排/报销；主要为材料、行李和发薪前周转）", "url": "https://jetprogramme.org/en/aspiring/eligibility/", "lang": "CIR 岗位需高水平日语，通常相当于 JLPT N1 或 N2；英语/中文等岗位语言另按职位"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "新西兰", "name": "China Special Work Visa — Mandarin Teacher's Aide", "age": "无统一年龄上限", "edu": "中国公民；通常需3年制及以上高等教育学历", "cost": "约¥1.8–3.2万（签证费、机票和首薪前周转；通常先有工作安排）", "url": "https://www.immigration.govt.nz/visas/china-special-work-visa/", "lang": "中文母语或高水平普通话是岗位核心；签证无独立英语考试，需具备与学校工作的英语沟通能力"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "新西兰", "name": "China Special Work Visa — Chinese Tourism Specialist", "age": "无统一年龄上限", "edu": "中国公民；需满足该职业对应资历或经验要求", "cost": "约¥1.8–3.2万（签证费、机票和首薪前周转；通常先有工作安排）", "url": "https://www.immigration.govt.nz/visas/china-special-work-visa/", "lang": "需满足旅游专家英语证明：如 IELTS 听力和口语各≥5.0，或认可的 TOEFL/PTE/Cambridge 等同成绩"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "新西兰", "name": "China Special Work Visa — Wushu Martial Arts Coach", "age": "无统一年龄上限", "edu": "中国公民；需武术教练相关资历或经验", "cost": "约¥1.8–3.2万（签证费、机票和首薪前周转；通常先有工作安排）", "url": "https://www.immigration.govt.nz/visas/china-special-work-visa/", "lang": "中文授课能力为核心；签证无统一英语考试，需能与雇主/学员进行基本英语工作沟通"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "新西兰", "name": "China Special Work Visa — Traditional Chinese Medicine Practitioner", "age": "无统一年龄上限", "edu": "中国公民；需中医相关专业资历及职业要求证明", "cost": "约¥1.8–3.2万（签证费、机票和首薪前周转；通常先有工作安排）", "url": "https://www.immigration.govt.nz/visas/china-special-work-visa/", "lang": "中文专业沟通能力为核心；签证无统一英语考试，岗位可能要求英语并受职业/注册要求约束"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "日本", "name": "Specified Skilled Worker (i) — Nursing Care", "age": "18岁以上", "edu": "无大学学历要求；通过介护技能、介护日语及基础日语考试", "cost": "约¥1–2.2万（日语/技能考试、材料、签证和机票；签约后雇主/支援机构提供生活支持）", "url": "https://www.ssw.go.jp/en/about/visa/nursing_care_1/", "lang": "需通过 JFT-Basic 或 JLPT N4 及以上，并通过“护理日语评价考试”；另需护理技能考试"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "英国", "name": "British Council Chinese Language Assistants Programme（普通话助教项目）", "age": "无统一年龄上限；以当年度招募通知为准", "edu": "中小学在职教师、具海外汉语教学经验的归国志愿者，或教学实践能力较强的优秀研究生；普通话二甲及以上、英语达到项目要求", "cost": "约¥0.8–2万（赴英机票、住宿押金和首薪前周转；项目为有薪助教，具体报销按当期安排）", "url": "https://www.britishcouncil.org/study-work-abroad/in-uk/teach-language-uk", "lang": "普通话须达到母语/流利水平；英语需足以在英国学校工作和生活，具体选拔标准以中国合作机构当期通知为准"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "西班牙", "name": "Auxiliares de Conversación de Chino en España（中文助教）", "age": "以当年度招募通知为准", "edu": "中国籍；语言文学类大学学历（优先西班牙语/西语文学方向）或相关专业最后一年在读", "cost": "约¥1.2–2.6万（签证、机票、住宿押金和首月生活；项目按地区发月津贴）", "url": "https://www.educacionfpydeportes.gob.es/china/convocatorias-y-programas/convocatorias-china/auxiliares-conversacion.html", "lang": "中文母语或高水平中文教学能力；官方项目未统一要求西语证书，具备基本西语/英语沟通能力更稳妥"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "法国", "name": "中法语言助教交换项目（赴法汉语语言助教）", "age": "20–30岁", "edu": "本科应届毕业生（大四）或在读研究生；出发前须取得本科及以上学位；法语B1", "cost": "约¥1.5–3.5万（申请/材料、机票、签证和初期住宿押金；任期有工资）", "url": "https://www.france-education-international.fr/venir-en-france/devenir-assistant-de-langue-en-france/votre-candidature", "lang": "法语至少 B1（CEFR）；中文母语或高水平汉语教学能力为岗位基础"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "新西兰", "name": "Mandarin Language Assistant Programme（普通话助教项目）", "age": "无统一年龄上限；以派出与接收单位当年遴选为准", "edu": "主要面向中国高校研究生或研究生阶段人员；具体专业与语言要求按当年遴选通知", "cost": "约¥0.4–1.2万（项目通常承担国际旅费并提供生活/住宿支持；个人主要备材料和周转）", "url": "https://ci.ac.nz/chinese-in-schools/mla-prog/", "lang": "普通话母语或高水平；需能用英语在新西兰学校进行日常教学协作，项目未公开统一考试分数线"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "美国", "name": "ALLEX Teaching Associate Program（华语讲师项目）", "age": "无统一年龄上限", "edu": "本科毕业或应届毕业生；需满足合作大学的英语及学位申请要求；无中文教学经验也可申请并参加师资培训", "cost": "约¥2–5万（培训/项目、签证和机票前置支出；奖学金覆盖面依接收大学方案）", "url": "https://www.allex.org/cn/scholarships-for-teaching-chinese", "lang": "中文母语或高水平；需提交英语能力证明（TOEFL/IELTS 等），具体分数看合作大学/项目"}, {"cat": "② 靠语言、文化和照护能力出去", "country": "泰国", "name": "国际中文教育志愿者项目（泰国中文教师）", "age": "原则上22–50岁；以当年度泰国岗位要求为准", "edu": "主要面向本科及以上应届毕业生、在读研究生及往届志愿者；部分岗位接受在职中小学教师，须满足普通话与外语等岗位要求", "cost": "约¥0.4–1.2万（体检、材料、签证和个人周转；项目按派出政策提供津贴/保险/交通支持）", "url": "https://pmplatform.chinese.cn/ui/start/", "lang": "普通话水平测试通常需二级甲等及以上；泰国等岗位常要求英语 CET-4≥425，或具备泰语等驻在国语言"}, {"cat": "③ 用一年时间换一段海外人生", "country": "德国", "name": "FSJ（Freiwilliges Soziales Jahr）", "age": "通常16–26岁", "edu": "完成义务教育；无大学学历要求", "cost": "约¥0.6–1.5万（签证、机票及到岗周转；项目有津贴，食宿/交通补贴依机构）", "url": "https://www.jugendfreiwilligendienste.de/jugendfreiwilligendienste/jugendfreiwilligendienste/freiwilliges-soziales-jahr", "lang": "无全国统一等级；德语越好越有利，很多机构要求能进行基本日常沟通，以接收岗位为准"}, {"cat": "③ 用一年时间换一段海外人生", "country": "德国", "name": "FÖJ（Freiwilliges Ökologisches Jahr）", "age": "通常16–26岁", "edu": "完成义务教育；无大学学历要求", "cost": "约¥0.6–1.4万（签证、机票及到岗周转；项目有津贴，食宿/交通补贴依机构）", "url": "https://www.jugendfreiwilligendienste.de/jugendfreiwilligendienste/jugendfreiwilligendienste/freiwilliges-oekologisches-jahr", "lang": "无全国统一等级；德语越好越有利，很多机构要求能进行基本日常沟通，以接收岗位为准"}, {"cat": "③ 用一年时间换一段海外人生", "country": "德国", "name": "Bundesfreiwilligendienst（BFD）", "age": "完成义务教育后即可；无统一年龄上限", "edu": "无大学学历要求", "cost": "约¥0.6–1.5万（签证、机票及到岗周转；有零用金和社会保障，食宿补贴依岗位）", "url": "https://www.bundesfreiwilligendienst.de/", "lang": "无全国统一等级；按岗位决定，很多实际岗位要求德语 B1 左右"}, {"cat": "③ 用一年时间换一段海外人生", "country": "德国及伙伴国", "name": "weltwärts South–North Volunteer Service", "age": "通常18–28岁；须通过参与机构选拔", "edu": "无统一大学学历要求；具体看派出机构和岗位", "cost": "约¥0.2–0.8万（项目资助大部分国际交通、保险、食宿与语言课程；留少量个人周转）", "url": "https://www.weltwaerts.de/en/programme-and-objectives.html", "lang": "愿意在出发前后学习德语，或已有德语基础；德语熟练并非绝对前提，项目含语言课程"}, {"cat": "③ 用一年时间换一段海外人生", "country": "法国及全球", "name": "Volontariat de solidarité internationale（VSI）", "age": "18岁以上；无统一上限", "edu": "无统一学历要求；按任务要求匹配专业或经验", "cost": "约¥0.3–1万（VSI机制通常覆盖津贴、社会保障、保险及回程安排；个人备材料/周转）", "url": "https://france-volontaires.org/en/before-volunteering/the-various-ways-you-can-volunteer/le-volontariat-de-solidarite-internationale-vsi/", "lang": "无统一语言考试；按任务国家和岗位，常要求法语或任务工作语言的工作沟通能力"}, {"cat": "③ 用一年时间换一段海外人生", "country": "全球", "name": "UN Youth Volunteer", "age": "18岁起；青年岗位通常面向较年轻申请人", "edu": "学历和经验按具体任务；部分岗位接受中学或大学阶段申请人", "cost": "约¥0.2–0.8万（任务提供生活津贴、安置/旅行和保险支持；个人备签证材料与过渡金）", "url": "https://www.unv.org/become-volunteer/volunteer-abroad/requirements", "lang": "需良好掌握至少一种 UNV 工作语言：英语、法语或西班牙语；具体任务可加本地语言要求"}, {"cat": "③ 用一年时间换一段海外人生", "country": "全球", "name": "International UN Volunteer", "age": "18岁以上；岗位常有经验要求", "edu": "学历和专业经验按岗位公告", "cost": "约¥0.2–0.8万（任务提供生活津贴、安置/旅行和保险支持；个人备签证材料与过渡金）", "url": "https://www.unv.org/become-volunteer/volunteer-abroad", "lang": "需良好掌握至少一种 UNV 工作语言：英语、法语或西班牙语；具体任务可加本地语言要求"}, {"cat": "③ 用一年时间换一段海外人生", "country": "全球", "name": "UN University Volunteer", "age": "18岁起；以岗位公告为准", "edu": "通常为大学在读生，由高校与UNV合作项目选派", "cost": "约¥0.2–0.8万（由合作大学/项目资助部署；个人主要备材料、签证和过渡周转）", "url": "https://www.unv.org/tags/un-university-volunteers", "lang": "需良好掌握至少一种 UNV 工作语言：英语、法语或西班牙语；大学合作项目可能另有校内选拔条件"}, {"cat": "③ 用一年时间换一段海外人生", "country": "多国", "name": "SCI International Workcamps", "age": "多数项目18岁以上", "edu": "无统一学历要求", "cost": "约¥0.6–2.2万（报名费、保险及往返营地交通；营期食宿通常包含）", "url": "https://www.volunteer.sci.ngo/", "lang": "按营地项目；多数要求能用英语进行基本沟通，部分项目另要求当地语言"}, {"cat": "③ 用一年时间换一段海外人生", "country": "多国", "name": "AIESEC Global Volunteer", "age": "通常18–30岁", "edu": "无统一学历要求；项目会设语言或技能条件", "cost": "约¥1–3.5万（项目费、机票、签证/保险及项目不包部分；住宿支持因机会不同）", "url": "https://aiesec.org/global-volunteer", "lang": "按机会页面的 Required language；常见要求英语工作沟通，部分项目要求当地语言"}, {"cat": "③ 用一年时间换一段海外人生", "country": "芬兰", "name": "Residence Permit for Voluntary Work", "age": "无统一年龄上限", "edu": "无统一学历要求；须参加符合条件的志愿项目", "cost": "约¥1.2–2.8万（居留申请费、机票和过渡金；食宿由志愿项目安排情况决定）", "url": "https://migri.fi/en/volunteering", "lang": "居留许可无统一语言考试；志愿项目可按岗位要求英语/芬兰语/瑞典语"}, {"cat": "③ 用一年时间换一段海外人生", "country": "葡萄牙", "name": "Volunteer Residence Route", "age": "通常18岁以上", "edu": "无统一学历要求；须有合规志愿协议或项目", "cost": "约¥1–3万（签证、机票和过渡金；如主办机构书面承担生活/住宿，可明显降低）", "url": "https://home-affairs.ec.europa.eu/policies/migration-and-asylum/eu-immigration-portal/volunteer-portugal_en", "lang": "签证/居留无统一语言考试；志愿机构可要求葡萄牙语或英语，以项目协议为准"}, {"cat": "③ 用一年时间换一段海外人生", "country": "英国", "name": "Charity Worker visa", "age": "18岁以上", "edu": "无统一学历要求；须有持牌赞助机构的CoS", "cost": "约¥2.5–4万（签证、机票及 £1,270 维护资金；担保方认证维护时可免资金证明）", "url": "https://www.gov.uk/temporary-worker-charity-worker-visa", "lang": "签证无统一英语考试门槛；慈善机构岗位可自行要求英语沟通能力"}, {"cat": "③ 用一年时间换一段海外人生", "country": "爱尔兰", "name": "Volunteer Permission", "age": "18岁以上", "edu": "无统一学历要求；须由符合资格的组织邀请并承担安排", "cost": "约¥1.2–3万（签证/注册、机票和周转；组织须提供支持方案，是否包食宿依项目）", "url": "https://www.irishimmigration.ie/coming-to-work-in-ireland/what-are-my-options-for-working-in-ireland/coming-to-work-for-more-than-90-days/volunteer/", "lang": "移民许可无统一语言考试；按志愿组织岗位要求，常见英语工作沟通"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "美国", "name": "J-1 Intern", "age": "无统一年龄上限", "edu": "海外大学在读，或毕业未满12个月；实习须与专业相关", "cost": "约¥2.5–6万（赞助商费、SEVIS/签证、保险和机票；若无薪需另备目的地生活费）", "url": "https://j1visa.state.gov/programs/intern/", "lang": "必须具备用英语顺利参加实习的能力；赞助方需核验，可通过考试、面试或其他方式证明"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "美国", "name": "J-1 Trainee", "age": "无统一年龄上限", "edu": "海外相关学位/职业证书+至少1年相关经验，或5年相关工作经验", "cost": "约¥2.5–6万（赞助商费、SEVIS/签证、保险和机票；若无薪需另备目的地生活费）", "url": "https://j1visa.state.gov/programs/trainee/", "lang": "必须具备用英语顺利参加培训的能力；赞助方需核验，可通过考试、面试或其他方式证明"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "多国", "name": "IAESTE Global Internship", "age": "无统一年龄上限", "edu": "大学在读或毕业1年内；岗位以STEM等专业为主", "cost": "约¥1–2.8万（会员/行政、签证和机票；IAESTE岗位通常有工资覆盖当地基本生活）", "url": "https://iaeste.org/how-it-works", "lang": "IAESTE 常以英语为工作语言；个别岗位会在职位说明中另要求当地语言"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "多国", "name": "AIESEC Global Talent", "age": "通常18–30岁", "edu": "学生或青年人才；学历、专业和语言要求按岗位", "cost": "约¥1.5–4万（项目费、签证和机票；多为有薪岗位，但首薪前押金/周转需自备）", "url": "https://aiesec.org/global-talent", "lang": "按职位页面的 Required language；多数岗位要求英语工作能力，部分另要求当地语言"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "丹麦", "name": "Intern Residence and Work Permit", "age": "无统一年龄上限", "edu": "通常须在读，实习需与所学专业及教育目的相关", "cost": "有薪岗位约¥1.5–3万；无薪岗位需另证明 DKK 7,426/月×全程（再加申请费和机票）", "url": "https://www.nyidanmark.dk/en-GB/You-want-to-apply/Interns", "lang": "居留许可无统一语言证书要求；实习单位按岗位决定，通常需英语或丹麦语工作沟通"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "英国", "name": "Government Authorised Exchange visa", "age": "18岁以上", "edu": "须通过获批交换/培训方案并取得CoS；学历按项目", "cost": "约¥2.5–4.5万（签证、机票及 £1,270 维护金；赞助者认证维护可降低）", "url": "https://www.gov.uk/government-authorised-exchange", "lang": "签证路线无统一英语考试要求；交换项目/赞助方可按岗位要求英语"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "欧洲及伙伴院校", "name": "Erasmus+ Traineeship", "age": "无统一年龄上限", "edu": "参与高校的在读大学生；部分项目覆盖合作伙伴国流动", "cost": "约¥0.5–2万（Erasmus+资助抵扣部分交通和生活；实际差额取决于城市、资助档次和住宿押金）", "url": "https://erasmus-plus.ec.europa.eu/opportunities/opportunities-for-individuals/students/traineeships-abroad-for-students", "lang": "无统一 CEFR 最低线；接收机构设岗位语言，参与者通常需完成适用的 OLS 语言评估/支持流程"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "菲律宾/亚洲", "name": "ADB Internship Program", "age": "无统一年龄上限", "edu": "硕士或博士在读；专业需与ADB工作领域相关；须为成员经济体国民", "cost": "约¥0.5–1.5万周转（项目发津贴；具体交通支持按当期录用条款，先备签证/机票时间差）", "url": "https://www.adb.org/work-with-us/careers/internship-program", "lang": "工作语言为英语；需具备足以完成专业申请、面试和实习任务的英语能力，官网通常不设统一考试分数"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "奥地利", "name": "IAEA Internship Programme", "age": "20岁以上", "edu": "至少完成3年全日制大学学习；在读或毕业1年内", "cost": "约¥0.4–1万周转（全职实习有月津贴并提供医疗保险；先备机票/押金）", "url": "https://www.iaea.org/about/employment/internships", "lang": "英语口语和书面工作能力为必需；其他 IAEA 官方语言为加分项"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "法国", "name": "ITER Internship Programme", "age": "无统一年龄上限；按实习类别", "edu": "涵盖本科、硕士/工程阶段等；岗位须与专业匹配", "cost": "约¥0.8–2.5万（资助按实习类别/岗位；未明确全额覆盖交通住宿时需预留机票和押金）", "url": "https://www.iter.org/public/jobs/internships", "lang": "英语为主要工作语言，需具备流利的科研/技术沟通能力；无统一考试分数线"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "全球", "name": "FAO Internship Programme", "age": "21–30岁", "edu": "本科/研究生在读或近期毕业；专业与FAO领域相关；成员国国籍", "cost": "约¥0.6–2万周转（FAO提供月津贴；旅行和住宿是否另补助按岗位/办公室规则）", "url": "https://www.fao.org/employment/young-talent-programme/internship-programme/en", "lang": "需工作掌握至少一种 FAO 官方语言（阿/中/英/法/俄/西）；第二种为加分项"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "瑞士", "name": "WIPO Internship Program", "age": "无统一年龄上限", "edu": "大学在读或毕业2年内；本科高年级/研究生阶段按类别申请", "cost": "约¥0.8–2万周转（WIPO有月津贴，主要前置为机票和住宿押金）", "url": "https://www.wipo.int/en/web/working-at-wipo/internship-program", "lang": "需具备专业水平的英语和/或法语书面与口语能力"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "瑞士", "name": "WTO Internship Programme", "age": "通常21–30岁", "edu": "本科毕业且至少完成1年研究生学习；专业与WTO工作相关", "cost": "约¥1.2–2.5万（WTO按日发津贴；机票和住宿安排自理，需覆盖出发及首月押金）", "url": "https://www.wto.org/english/thewto_e/vacan_e/iypp_e.htm", "lang": "需能以 WTO 工作语言之一工作：英语、法语或西班牙语"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "瑞士/全球", "name": "ITU Internship Programme", "age": "通常未满30岁", "edu": "本科/研究生在读，或毕业后短期内；专业需与岗位相关", "cost": "约¥0.8–2.5万（津贴/支持按 ITU 岗位地点；未获额外交通支持时需自备机票和押金）", "url": "https://jobs.itu.int/content/Internships/?locale=en_US", "lang": "需流利掌握至少一种 ITU 官方语言；具体岗位可要求更多语言"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "奥地利/全球", "name": "UNIDO Internship Programme", "age": "无统一年龄上限", "edu": "本科最后一年、硕博在读或毕业12个月内", "cost": "约¥4–8万（UNIDO实习通常不作为带薪岗位；按3–6个月驻地生活、机票和住宿估算）", "url": "https://careers.unido.org/content/Internship/?locale=en_US", "lang": "通常要求流利英语书面和口语；另一联合国官方语言为加分项，以具体岗位为准"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "意大利/全球", "name": "IFAD Internship Programme", "age": "通常30岁以下", "edu": "至少完成2年本科；在读或近期毕业，专业与IFAD工作相关", "cost": "约¥0.5–1.8万周转（IFAD实习有月津贴并可按规则提供旅行支持；个人备签证/押金）", "url": "https://www.ifad.org/en/work-with-us/internship-programmes", "lang": "需英语流利；部分岗位还会要求另一种 IFAD 工作语言"}, {"cat": "④ 把大学专业变成海外实习机会", "country": "德国", "name": "ITLOS Internship Programme", "age": "通常不超过32岁", "edu": "至少完成3年大学学习；在读或近期毕业；偏国际法/海洋法等方向", "cost": "无资助约¥3.5–6万（3个月汉堡食宿+机票/保险）；获 ITLOS 信托基金资助者可显著降低", "url": "https://www.itlos.org/en/main/the-registry/training/internship-programme/", "lang": "需良好掌握英语和/或法语；申请材料须使用英/法语，语言类岗位要求更高"}, {"cat": "⑤ 进入联合国和国际组织", "country": "美国/全球", "name": "World Bank Group Pioneers Internship", "age": "无统一年龄上限", "edu": "本科最后一年，或硕士/博士在读；专业需与岗位相关", "cost": "约¥0.5–1.5万周转（WBG Pioneers为带薪实习；主要为机票/住宿押金的现金流时间差）", "url": "https://www.worldbank.org/ext/en/careers/talent-programs/wbg-pioneers", "lang": "需英语流利，能进行专业分析、写作和团队沟通"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "UNICEF Internship Programme", "age": "18岁以上", "edu": "本科/硕士/博士在读，或毕业2年内", "cost": "约¥0.5–1.8万周转（UNICEF有实习津贴；有资金时可另给旅行/签证一次性补助）", "url": "https://www.unicef.org/careers/internships", "lang": "至少熟练掌握英语、法语或西班牙语之一；申请办公室的工作语言可能另有要求"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "UNDP Internship Programme", "age": "无统一年龄上限", "edu": "本科最后一年、研究生在读，或毕业1年内", "cost": "约¥0.5–1.8万周转（UNDP按规则发月津贴；机票/押金需看岗位地点）", "url": "https://www.undp.org/careers/people-programmes", "lang": "通常需英语流利；如办公室使用其他工作语言，也可能要求相应语言"}, {"cat": "⑤ 进入联合国和国际组织", "country": "法国/全球", "name": "UNESCO Internship Programme", "age": "20岁以上", "edu": "本科高年级或硕士/博士在读，或毕业12个月内", "cost": "约¥4–9万（UNESCO明确不支付实习报酬，需自理旅行、住宿和生活；1–6个月跨度大）", "url": "https://careers.unesco.org/content/Internship-Programme/?locale=en_GB", "lang": "英语或法语需达到优秀书面和口语水平；另一门为加分项，部分总部行政岗可能要求两者"}, {"cat": "⑤ 进入联合国和国际组织", "country": "美国", "name": "IMF Fund Internship Program", "age": "博士方向通常未满32岁", "edu": "重点面向经济学等相关博士在读生；其他专业岗位按公告", "cost": "约¥0.3–1万周转（IMF带薪，并提供学校所在地至华盛顿的往返限定经济舱机票；住宿押金需自备）", "url": "https://www.imf.org/en/about/recruitment/working-at-the-imf/fund-internship-program", "lang": "经济类 FIP 要求英语书面和口语优秀"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "UNHCR Internship Programme", "age": "无统一年龄上限", "edu": "大学在读或毕业2年内；申请前至少完成2年本科", "cost": "约¥0.5–2万周转（UNHCR按驻地规则提供生活补助，并可能报销合资格往返旅行）", "url": "https://www.unhcr.org/us/get-involved/work-us/careers-unhcr/types-contracts-and-appointments/internships", "lang": "按岗位；通常需较强英语或办公室工作语言，部分岗位要求第二门联合国语言/当地语言"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "IOM Internship Programme", "age": "通常20–36岁；以岗位公告为准", "edu": "本科最后一年、研究生在读或近期毕业；专业按岗位", "cost": "约¥0.8–2.5万（IOM津贴/旅行支持因岗位和办公室而异；先按机票+押金+首月周转准备）", "url": "https://www.iom.int/internship-programme", "lang": "需口头和书面掌握至少一种 IOM 官方语言（英/法/西）；岗位可增设其他语言"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "WHO Internship Programme", "age": "20岁以上", "edu": "至少完成3年全日制大学学习；在读或毕业18个月内", "cost": "约¥0.8–2.5万（WHO支持政策和驻地安排以岗位为准；不要按“全额资助”预估，需留机票/押金）", "url": "https://www.who.int/careers/internship-programme", "lang": "需流利掌握实习地点至少一种工作语言；可能安排语言测试"}, {"cat": "⑤ 进入联合国和国际组织", "country": "全球", "name": "FAO Fellows Programme", "age": "无统一年龄上限", "edu": "硕士/博士学历或博士在读；通常需至少2年相关经验", "cost": "约¥0.2–1万周转（Fellows通常由派出/资助机构承担主要费用，个人备签证材料和周转）", "url": "https://www.fao.org/employment/young-talent-programme/fellows-programme/en", "lang": "需工作掌握至少一种 FAO 官方语言（阿/中/英/法/俄/西）；第二种为加分项"}, {"cat": "⑤ 进入联合国和国际组织", "country": "菲律宾/全球", "name": "ADB Young Professionals Program", "age": "32岁及以下（通常以入职时计算）", "edu": "本科以上；通常需较强相关专业经验及跨国/发展领域能力", "cost": "约¥0.3–1.2万周转（YPP是正式有薪国际职员岗位；主要为入职前材料、行李和现金流时间差）", "url": "https://www.adb.org/work-with-us/careers/adb-young-professionals-program", "lang": "需优秀英语口语和书面能力"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "OIST Research Internship", "age": "无统一年龄上限", "edu": "本科或硕士阶段在读/近期毕业；研究方向需与实验室匹配", "cost": "约¥0.2–0.6万周转（OIST提供往返交通、住宿和 JPY 2,400/工作日津贴）", "url": "https://www.oist.jp/admissions/research-internship/program-description", "lang": "英语为主要科研与申请语言；无统一公开考试分数线，但需能进行科研沟通"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "沙特阿拉伯", "name": "KAUST Visiting Student Research Program（VSRP）", "age": "无统一年龄上限", "edu": "本科三/四年级或硕士在读；STEM方向", "cost": "约¥0.2–0.6万周转（KAUST覆盖机票、住宿、签证、保险并付 USD 1,000/月）", "url": "https://admissions.kaust.edu.sa/study/internships", "lang": "需较强英语；官方建议 TOEFL iBT 约79或 IELTS 约6.0"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "瑞士", "name": "CERN Summer Studentship", "age": "无统一年龄上限", "edu": "物理、工程、计算机或数学本科/硕士在读；至少完成6学期", "cost": "约¥0.5–1.2万周转（CERN有日津贴和旅行补助；主要为签证、机场交通及发津贴前周转）", "url": "https://careers.cern/programmes/summer-studentship/", "lang": "需良好掌握英语或法语；申请可用英语或法语"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "瑞士", "name": "CERN openlab Summer Student Programme", "age": "无统一年龄上限", "edu": "计算机、数学、工程或物理本科/硕士在读；通常至少完成3年大学学习", "cost": "约¥0.4–1万周转（CHF 93/日生活津贴+旅行一次性补助，个人备签证/押金现金流）", "url": "https://openlab.cern/cern-openlab-summer-student-programme/", "lang": "需良好英语沟通能力；项目工作和讲座主要使用英语"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "瑞士", "name": "ETH Student Summer Research Fellowship（SSRF）", "age": "无统一年龄上限", "edu": "全球本科/硕士在读生；计算机相关研究方向", "cost": "约¥0.2–0.5万周转（ETH SSRF提供 CHF 4,000，并覆盖旅行/签证费用）", "url": "https://inf.ethz.ch/studies/summer-research-fellowship.html", "lang": "英语为科研工作语言；无需统一英语考试证书，但申请材料/面试需体现工作能力"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "瑞士", "name": "EPFL Life Sciences Summer Research Program", "age": "无统一年龄上限", "edu": "生命科学相关专业在读；通常至少完成2年本科至硕士一年级阶段", "cost": "约¥0.4–1万周转（项目有生活资助；机票/签证支持以当年通知为准，预留时间差）", "url": "https://www.epfl.ch/schools/sv/education/summer-research-program/", "lang": "英语为科研工作语言；项目未统一设置公开考试最低分，需能完成科研沟通"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "瑞士", "name": "Summer@EPFL", "age": "无统一年龄上限", "edu": "计算机、通信、电气等相关本科/硕士在读", "cost": "约¥0.3–0.8万周转（CHF 1,800/月生活支持并报销旅行，主要备签证和初期押金）", "url": "https://summer.epfl.ch/", "lang": "英语为科研工作语言；项目未统一设置公开考试最低分，需能完成科研沟通"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "德国", "name": "DESY Summer Student Programme", "age": "无统一年龄上限", "edu": "通常至少完成3年大学学习；物理、相关自然科学或计算方向", "cost": "约¥0.5–1.2万周转（DESY有生活津贴并可部分报销国际交通；差额和前置机票需自备）", "url": "https://summerstudents.desy.de/", "lang": "良好英语能力为必要条件"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "奥地利", "name": "Vienna BioCenter Summer School", "age": "无统一年龄上限", "edu": "生命科学相关本科或硕士阶段；通常至少完成2年本科", "cost": "约¥0.3–0.8万周转（免费住宿+约€1,400净津贴/9周+保险；预留机票/签证现金流）", "url": "https://training.vbc.ac.at/summer-school/", "lang": "英语为项目工作语言；需具备良好科研交流能力，通常无统一考试分数"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "NIG-INTERN（National Institute of Genetics）", "age": "无统一年龄上限", "edu": "生命科学相关本科高年级或研究生阶段；具体以当年招生为准", "cost": "约¥0.8–1.5万（2026非全额资助：机票支持有上限，个人承担住宿、生活费及日本境内交通）", "url": "https://www.nig.ac.jp/jimu/soken/intern/", "lang": "申请材料和科研交流以英语为主；官方未设置统一英语考试最低分"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "University of Tokyo Research Internship Program（UTRIP）", "age": "无统一年龄上限", "edu": "日本以外大学的自然科学相关本科在读；完成至少1年且项目后返回原校继续学业", "cost": "约¥0.3–0.8万周转（UTRIP提供奖学金和指定住宿支持；主要为签证/个人开支）", "url": "https://www.s.u-tokyo.ac.jp/en/utrip/", "lang": "需提供英语能力证明；英语母语或长期英语授课背景可按规则豁免，具体认可成绩见当年申请指南"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "新加坡", "name": "NTU Global Connect Fellowship", "age": "无统一年龄上限", "edu": "本科或研究型硕士阶段；毕业年份等以当届项目公告为准", "cost": "约¥0.3–0.8万周转（SGD 5,000奖学金并提供住宿；主要备机票和首期周转）", "url": "https://www.ntu.edu.sg/about-us/global/global-connect-fellowship", "lang": "项目以英语进行；无需 TOEFL/GRE 成绩，但需能用英语完成科研交流"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "奥地利", "name": "ISTA Year-round Scientific Internship", "age": "无统一年龄上限", "edu": "自然科学、计算机、数学等本科/硕士在读或近期毕业", "cost": "约¥0.5–1.2万周转（ISTA科研实习为带薪岗位，约€1,583税前/月；先备机票和押金）", "url": "https://ista.ac.at/en/education/internship-and-scholarship/", "lang": "英语为科研工作语言；无统一考试分数，需能进行专业沟通"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "德国", "name": "Max Planck Computer Science Internships", "age": "无统一年龄上限", "edu": "计算机及相关方向本科、硕士或博士阶段；全球申请", "cost": "约¥0.2–0.6万周转（项目提供生活/住宿和往返旅行支持，主要为签证材料和杂费）", "url": "https://www.cis.mpg.de/internships/", "lang": "需专业英语能力；不强制提交语言证书"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "RIKEN CBS Summer Program", "age": "无统一年龄上限", "edu": "以研究生和青年研究人员为主；脑科学/相关方向", "cost": "获批资助约¥0.4–1万（可覆盖交通/住宿，餐饮自理）；未获资助需按日本停留期另备生活费", "url": "https://cbs.riken.jp/en/summer/", "lang": "项目以英语进行科研交流；无统一公开考试分数，需能完成讲座、讨论和研究汇报"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "RIKEN IMS Internship Program", "age": "无统一年龄上限", "edu": "通常面向医学、生命科学等相关学生或青年研究人员", "cost": "学生类别约¥0.2–0.6万周转（RIKEN IMS包住宿+旅行并付 JPY 3,000/工作日；青年博后类别无日津贴）", "url": "https://www.ims.riken.jp/english/jobs/internship.php", "lang": "申请材料必须用英语，日语申请不接受；需能用英语进行科研沟通，未设统一考试分数"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "University of Tokyo Amgen Scholars Program", "age": "无统一年龄上限", "edu": "亚洲高校本科在读；完成至少1年并在项目后继续本科阶段学习", "cost": "约¥0.2–0.6万周转（UTokyo Amgen覆盖机票、住宿及生活津贴）", "url": "https://www.u-tokyo.ac.jp/en/prospective-students/amgen_program.html", "lang": "需良好英语；非英语母语/非英语授课背景者通常需提供认可英语成绩，以当年指南为准"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "日本", "name": "Kyoto University Amgen Scholars Program", "age": "无统一年龄上限", "edu": "亚洲高校科学相关本科在读；年级条件以当届公告为准", "cost": "约¥0.2–0.6万周转（Kyoto Amgen提供 JPY 180,000奖学金、旅行费和住宿）", "url": "https://www.opir.kyoto-u.ac.jp/study/en/curriculum/amgenscholars/", "lang": "非英语母语者需证明英语：TOEFL iBT≥72、IELTS≥5.5，或 Cambridge FCE/认可 TOEIC 等同标准"}, {"cat": "⑥ 世界顶级大学和实验室出钱请你去", "country": "新加坡", "name": "NUS Amgen Scholars Program", "age": "无统一年龄上限", "edu": "亚洲高校本科在读；完成至少1年且项目后继续原学位", "cost": "约¥0.2–0.8万周转（NUS Amgen提供项目资助、住宿和旅行支持；个人备签证/杂费）", "url": "https://www.dbs.nus.edu.sg/outreach/amgen-scholars-program/", "lang": "项目主要用英语；需英语熟练，亚洲 Amgen 当年指南通常接受 TOEFL iBT≥72、IELTS≥5.5 等同标准"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "德国", "name": "Dual Vocational Training（Ausbildung）", "age": "通常18岁以上；签证无统一年龄上限", "edu": "通常需中学毕业证；有培训合同；德语一般需B1左右", "cost": "有合同且培训工资达标时约¥1.5–3万（考试/签证/机票和首月）；工资不足时需补足生活资金证明差额", "url": "https://www.make-it-in-germany.com/en/visa-residence/types/training", "lang": "通常需德语 B1；如培训机构已确认语言能力或课程另有标准，以合同/机构要求为准"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Construction", "age": "18岁以上", "edu": "无大学学历要求；通过建筑技能考试及JFT-Basic/JLPT N4等日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/construction_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Industrial Product Manufacturing", "age": "18岁以上", "edu": "无大学学历要求；通过制造业技能考试及基础日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/industrial_product_manufacturing_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Automobile Repair and Maintenance", "age": "18岁以上", "edu": "无大学学历要求；通过汽修技能考试及基础日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/automobile_repair_and_maintenance_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Accommodation", "age": "18岁以上", "edu": "无大学学历要求；通过住宿业技能考试及基础日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/accommodation_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Agriculture", "age": "18岁以上", "edu": "无大学学历要求；通过农业技能考试及基础日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/agriculture_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑦ 不读大学，学一门手艺直接出去", "country": "日本", "name": "SSW(i) — Food & Beverage Manufacturing", "age": "18岁以上", "edu": "无大学学历要求；通过食品制造技能考试及基础日语要求", "cost": "约¥0.8–2万（日语/技能考试、材料、签证和机票；与雇主签约后办理，支援机构提供落地支持）", "url": "https://www.ssw.go.jp/en/about/visa/food_and_beverage_manufacturing_1/", "lang": "一般需 JFT-Basic 或 JLPT N4 及以上，同时通过对应行业技能考试；相关技能实习 II 期完成者可按规则豁免部分考试"}, {"cat": "⑧ 直接去海外工作", "country": "德国", "name": "Opportunity Card（Chancenkarte）", "age": "无硬性年龄上限；年龄影响积分", "edu": "认可学历/职业资质，或满足积分制要求；需满足语言及其他积分条件", "cost": "约¥10–11.5万（按2026标准需证明 €1,091/月×最长12个月，再加签证、保险和机票；合规兼职合同可抵减）", "url": "https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/job-search", "lang": "积分制路径需德语 A1 或英语 B2；已具有德国认可专业资格的直接路径可不以此作为基础门槛，但岗位仍可能要求德语"}, {"cat": "⑧ 直接去海外工作", "country": "德国", "name": "EU Blue Card", "age": "无统一年龄上限", "edu": "认可的大学/高等教育资历或符合特定IT经验路径；须有合格工作合同", "cost": "约¥1.5–3.5万（已有高薪合同，无统一存款证明；主要为签证、机票、住宿押金和首薪前周转）", "url": "https://www.make-it-in-germany.com/en/visa-residence/types/eu-blue-card", "lang": "法律上无统一德语考试；雇主岗位和受监管职业可要求德语/英语，实际高技能岗位常需工作英语或德语"}, {"cat": "⑧ 直接去海外工作", "country": "德国", "name": "Work Visa for Qualified Professionals", "age": "无统一年龄上限", "edu": "被认可或可比的大学/职业资格；须有合格岗位录用", "cost": "约¥1.5–3.5万（已有雇佣合同；主要为签证、机票、押金和首薪前周转，个案可能被要求额外证明）", "url": "https://www.make-it-in-germany.com/en/visa-residence/types/work-qualified-professionals", "lang": "无全国统一语言考试；按岗位、雇主及受监管职业要求，德语常影响录用"}, {"cat": "⑧ 直接去海外工作", "country": "德国", "name": "Visa for Professionally Experienced Workers", "age": "无统一年龄上限；45岁以上可能有额外薪资/养老要求", "edu": "本国认可的职业/高等教育资历+相关工作经验；须有合格工作", "cost": "约¥1.5–3.5万（已有雇佣合同；主要为签证、机票、押金和首薪前周转，个案可能被要求额外证明）", "url": "https://www.make-it-in-germany.com/en/visa-residence/types/visa-professionally-experienced-workers", "lang": "无全国统一语言考试；按岗位、雇主及受监管职业要求，德语常影响录用"}, {"cat": "⑧ 直接去海外工作", "country": "丹麦", "name": "Positive List for Skilled Work", "age": "无统一年龄上限", "edu": "须获得清单内短缺职业的工作；具备该岗位所需职业资历", "cost": "约¥2.2–4万（2026工作类申请费 DKK 6,810，加机票、住宿押金和首薪前周转）", "url": "https://www.nyidanmark.dk/en-GB/You-want-to-apply/Work/The-Positive-Lists/Positive-List-for-skilled-work", "lang": "无统一语言考试；由职位和专业授权要求决定，实际常需英语或丹麦语"}, {"cat": "⑧ 直接去海外工作", "country": "挪威", "name": "Skilled Worker Residence Permit", "age": "通常18岁以上", "edu": "职业教育、大学学历或特殊资历之一；须有符合条件的全职工作", "cost": "约¥2.5–4.5万（申请费、机票、住宿押金和首薪前周转；已有雇主合同）", "url": "https://www.udi.no/en/want-to-apply/work-immigration/skilled-workers/", "lang": "无统一入境语言考试；岗位/雇主决定，受监管职业可能另有挪威语要求"}, {"cat": "⑧ 直接去海外工作", "country": "瑞典", "name": "Employee Work Permit", "age": "无统一年龄上限", "edu": "无统一学历要求；须有符合工资、保险和劳动条件的工作合同", "cost": "约¥1.8–3.5万（SEK 2,200申请费、机票、住宿押金和首薪前周转）", "url": "https://www.migrationsverket.se/en/you-want-to-apply/work/employee-or-self-employed/employees.html", "lang": "工作许可无统一语言考试；语言由岗位决定，常见英语或瑞典语"}, {"cat": "⑧ 直接去海外工作", "country": "芬兰", "name": "Residence Permit for an Employed Person（TTOL）", "age": "无统一年龄上限", "edu": "无统一学历要求；须有签署的劳动合同或有约束力的工作邀请", "cost": "约¥1.5–3.2万（居留许可/可选D签证、机票、押金和首薪前周转；已有就业合同）", "url": "https://migri.fi/en/residence-permit-for-an-employed-person", "lang": "TTOL 无统一入境语言考试；岗位/雇主决定，常见英语或芬兰语"}, {"cat": "⑧ 直接去海外工作", "country": "爱尔兰", "name": "General Employment Permit", "age": "无统一年龄上限", "edu": "须有合格工作邀请并满足职业、薪资等条件；无统一大学学历门槛", "cost": "约¥2–4万（就业许可最高常见€1,000、签证/机票、住宿押金和首薪前周转；雇主可能代付许可费）", "url": "https://enterprise.gov.ie/en/what-we-do/workplace-and-skills/employment-permits/permit-types/general-employment-permit/", "lang": "就业许可无统一语言考试；由雇主岗位决定，实际通常需英语工作能力"}, {"cat": "⑧ 直接去海外工作", "country": "爱尔兰", "name": "Critical Skills Employment Permit", "age": "无统一年龄上限", "edu": "须有符合紧缺技能清单或高薪标准的岗位；资历按职业要求", "cost": "约¥2–4万（Critical Skills Permit €1,000、签证/机票、押金和首薪前周转；许可费可由第三方代付）", "url": "https://enterprise.gov.ie/en/what-we-do/workplace-and-skills/employment-permits/permit-types/critical-skills-employment-permit/", "lang": "就业许可无统一语言考试；由雇主岗位决定，实际通常需英语工作能力"}, {"cat": "⑧ 直接去海外工作", "country": "英国", "name": "Skilled Worker visa", "age": "通常18岁以上", "edu": "须有持牌雇主担保、符合职业和工资要求并满足英语要求；不一定要大学学历", "cost": "约¥3.5–8万（签证费+IHS按签证年限累加、机票及 £1,270维护金；Health and Care路径费用更低）", "url": "https://www.gov.uk/skilled-worker-visa", "lang": "英语至少 CEFR B2，需覆盖听说读写；可通过认可 SELT、合资格英语授课学位等方式证明"}, {"cat": "⑧ 直接去海外工作", "country": "新加坡", "name": "Employment Pass", "age": "无统一年龄上限", "edu": "专业、管理或高技能岗位；须满足薪资门槛及COMPASS等规则", "cost": "约¥0.8–2.5万（EP由雇主申请；个人主要备机票、住宿押金与首薪前生活费）", "url": "https://www.mom.gov.sg/passes-and-permits/employment-pass", "lang": "EP 无统一语言考试；岗位通常要求英语工作能力，由雇主/职位决定；非英语材料需附英文翻译"}];
+    </script>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ---------- build filter options from data ---------- */
+        var cats = [], countries = [], seenC = {}, seenN = {};
+        ROUTES.forEach(function (r) {
+          if (!seenC[r.cat]) { seenC[r.cat] = 1; cats.push(r.cat); }
+          if (!seenN[r.country]) { seenN[r.country] = 1; countries.push(r.country); }
+        });
+        countries.sort();
+
+        var chipsBox = document.getElementById("catChips");
+        var activeCats = {};
+        cats.forEach(function (c) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "chip";
+          b.textContent = c;
+          b.setAttribute("aria-pressed", "false");
+          b.addEventListener("click", function () {
+            if (activeCats[c]) { delete activeCats[c]; b.setAttribute("aria-pressed", "false"); }
+            else { activeCats[c] = 1; b.setAttribute("aria-pressed", "true"); }
+            render();
+          });
+          chipsBox.appendChild(b);
+        });
+
+        var selCountry = document.getElementById("fCountry");
+        countries.forEach(function (n) {
+          var o = document.createElement("option");
+          o.value = n; o.textContent = n;
+          selCountry.appendChild(o);
+        });
+
+        var inpAge = document.getElementById("fAge");
+        var selEdu = document.getElementById("fEdu");
+        var selBudget = document.getElementById("fBudget");
+        var inpKw = document.getElementById("fKw");
+        var cardsBox = document.getElementById("cards");
+        var countLine = document.getElementById("countLine");
+        var emptyBox = document.getElementById("emptyBox");
+
+        /* ---------- coarse parsers (original text always shown on card) ---------- */
+        // Age: returns {min, max} in years; null bound = no limit. Unparseable = no limit.
+        function parseAge(text) {
+          var m = text.match(/(\d+)\s*[–—\-~～]\s*(\d+)\s*岁/);
+          if (m) return { min: parseInt(m[1], 10), max: parseInt(m[2], 10) };
+          var min = null, max = null, mm, re;
+          re = /(\d+)\s*岁(?:以上|起)/g;
+          while ((mm = re.exec(text)) !== null) {
+            // "45岁以上可能有额外要求" is a condition note, not a minimum age
+            if (text.substr(re.lastIndex, 2) === "可能") continue;
+            min = parseInt(mm[1], 10);
+          }
+          if ((mm = text.match(/未满\s*(\d+)\s*岁/))) max = parseInt(mm[1], 10) - 1;
+          else if ((mm = text.match(/不超过\s*(\d+)\s*岁/))) max = parseInt(mm[1], 10);
+          else if ((mm = text.match(/(\d+)\s*岁及以下/))) max = parseInt(mm[1], 10);
+          else if ((mm = text.match(/(\d+)\s*岁以下/))) max = parseInt(mm[1], 10);
+          return { min: min, max: max };
+        }
+        function agePass(text, age) {
+          if (age === "" || age === null) return true;
+          var a = parseInt(age, 10);
+          if (isNaN(a)) return true;
+          var p = parseAge(text);
+          if (p.min !== null && a < p.min) return false;
+          if (p.max !== null && a > p.max) return false;
+          return true;
+        }
+
+        // Education: required level 0 高中及以下 / 1 大专 / 2 本科 / 3 硕士 / 4 博士
+        function eduReq(text) {
+          if (text.indexOf("无统一学历要求") >= 0 || text.indexOf("无大学学历要求") >= 0 ||
+              text.indexOf("无统一大学学历") >= 0 || text.indexOf("无学历要求") >= 0 ||
+              text.indexOf("不一定要大学学历") >= 0) return 0;
+          if (text.indexOf("3年制") >= 0) return 1;
+          var hasBen = /本科|大学|高等教育/.test(text);
+          var hasShuo = /硕士|研究生/.test(text);
+          var hasBo = text.indexOf("博士") >= 0;
+          if (hasBo && !hasShuo && !hasBen) return 4;
+          if (hasShuo && !hasBen) return 3;
+          if (hasBen) return 2;
+          return 0; // 高中/中学/义务教育起步，或未写明学历门槛
+        }
+        function eduPass(text, level) {
+          if (level === "") return true;
+          return parseInt(level, 10) >= eduReq(text);
+        }
+
+        // Cost: upper bound (yuan) of the first ¥…万 figure; null = unparseable (never filtered out)
+        function costMax(text) {
+          var m = text.match(/¥\s*([\d.]+)\s*(?:[–—\-~～]\s*([\d.]+)\s*)?万/);
+          if (!m) return null;
+          return parseFloat(m[2] || m[1]) * 10000;
+        }
+        function costPass(text, budget) {
+          if (budget === "") return true;
+          var c = costMax(text);
+          if (c === null) return true;
+          return c <= parseInt(budget, 10);
+        }
+
+        // 项目名多为英文：常见中文叫法 → 英文词，同义词也能搜到
+        var SYNONYMS = [["互惠", "au pair"]];
+        function kwPass(r, kw) {
+          if (!kw) return true;
+          var hay = (r.name + " " + r.country + " " + r.cat + " " + r.age + " " + r.edu + " " + r.cost + " " + r.lang).toLowerCase();
+          var k = kw.toLowerCase();
+          if (hay.indexOf(k) >= 0) return true;
+          for (var i = 0; i < SYNONYMS.length; i++) {
+            if (k.indexOf(SYNONYMS[i][0]) >= 0 && hay.indexOf(SYNONYMS[i][1]) >= 0) return true;
+          }
+          return false;
+        }
+
+        /* ---------- rendering ---------- */
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+        function cardHTML(r) {
+          return '<article class="card">' +
+            "<h2>" + esc(r.name) + "</h2>" +
+            '<div class="meta"><span class="tag country">' + esc(r.country) + '</span>' +
+            '<span class="tag">' + esc(r.cat) + "</span></div>" +
+            '<div class="rows">' +
+            '<div class="r"><span class="k">年龄要求</span><span class="v">' + esc(r.age) + "</span></div>" +
+            '<div class="r"><span class="k">学历要求</span><span class="v">' + esc(r.edu) + "</span></div>" +
+            '<div class="r"><span class="k">前期经费</span><span class="v">' + esc(r.cost) + "</span></div>" +
+            '<div class="r"><span class="k">语言要求</span><span class="v">' + esc(r.lang) + "</span></div>" +
+            "</div>" +
+            '<a class="linkbtn" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">官方链接 ↗</a>' +
+            "</article>";
+        }
+
+        function render() {
+          var anyCat = Object.keys(activeCats).length > 0;
+          var country = selCountry.value;
+          var age = inpAge.value;
+          var edu = selEdu.value;
+          var budget = selBudget.value;
+          var kw = inpKw.value.replace(/^\s+|\s+$/g, "");
+          var hits = ROUTES.filter(function (r) {
+            if (anyCat && !activeCats[r.cat]) return false;
+            if (country && r.country !== country) return false;
+            if (!agePass(r.age, age)) return false;
+            if (!eduPass(r.edu, edu)) return false;
+            if (!costPass(r.cost, budget)) return false;
+            if (!kwPass(r, kw)) return false;
+            return true;
+          });
+          countLine.innerHTML = "找到 " + hits.length + " 条路线" +
+            ' <span class="dim">（共 ' + ROUTES.length + " 条）</span>";
+          cardsBox.innerHTML = hits.map(cardHTML).join("");
+          emptyBox.hidden = hits.length > 0;
+        }
+
+        [selCountry, selEdu, selBudget].forEach(function (el) {
+          el.addEventListener("change", render);
+        });
+        [inpAge, inpKw].forEach(function (el) {
+          el.addEventListener("input", render);
+        });
+
+        document.getElementById("btnReset").addEventListener("click", function () {
+          activeCats = {};
+          var bs = chipsBox.querySelectorAll(".chip");
+          for (var i = 0; i < bs.length; i++) bs[i].setAttribute("aria-pressed", "false");
+          selCountry.value = ""; inpAge.value = ""; selEdu.value = "";
+          selBudget.value = ""; inpKw.value = "";
+          render();
+        });
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
